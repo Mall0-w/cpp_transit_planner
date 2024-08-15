@@ -1,13 +1,16 @@
 CXX = g++
-CXXFLAGS = -std=c++17
+CXXFLAGS = -std=c++17 -Wall
 
 # Targets and dependencies
 all: transit
 
-transit: transit.cpp filehandler.o
-	$(CXX) $(CXXFLAGS) transit.cpp filehandler.o -o transit.exe
+transit: transit.o filehandler.o
+	$(CXX) $(CXXFLAGS) transit.o filehandler.o -o transit.exe
 
-filehandler.o: filehandler.cpp
+transit.o: transit.cpp filehandler.hpp transitgraph.hpp
+	$(CXX) $(CXXFLAGS) -c transit.cpp
+
+filehandler.o: filehandler.cpp filehandler.hpp transitgraph.hpp
 	$(CXX) $(CXXFLAGS) -c filehandler.cpp
 
 clean:
