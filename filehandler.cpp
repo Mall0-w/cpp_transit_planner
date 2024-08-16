@@ -1,6 +1,9 @@
 #include <iostream>
 #include <filesystem>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <algorithm> 
 #include "filehandler.hpp"
 
 namespace fs = std::filesystem;
@@ -34,19 +37,75 @@ const bool GTFSHandler::checkValidGTFSLayout(const std::string& folder_path){
     return true;
 }
 
-//we can assume that the folderpath and file already exists because a prerequisite for calling laodstops is checkValidGTFSLayout;
-void GTFSHandler::loadStops(const std::string& folder_path, std::unique_ptr<TransitGraph> graph){
+void GTFSHandler::loadStops(const std::string& folder_path, const std::unique_ptr<TransitGraph>& graph) {
     fs::path dir(folder_path);
     fs::path file_path = dir / "stops.txt";
 
+    // Try to open the file
+    std::ifstream file(file_path);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open stops.txt");
+    }
+
+    std::string header;
+    std::getline(file, header);
+
+    // Split the header into individual column names
+    std::istringstream header_stream(header);
+    std::string column;
+    std::unordered_map<std::string, size_t> header_map;
+    size_t index = 0;
+    
+    while (std::getline(header_stream, column, ',')) {
+        header_map[column] = index++;
+    }
+
+    // Ensure the required columns exist
+    if (header_map.find("stop_id") == header_map.end() ||
+        header_map.find("stop_name") == header_map.end() ||
+        header_map.find("stop_lat") == header_map.end() ||
+        header_map.find("stop_lon") == header_map.end()) {
+        throw std::invalid_argument("Required columns not found in header");
+    }
+
+    //max index of our required columns, used to determine invalid rows / skipping
+    uint8_t max_index = std::max({header_map["stop_id"], header_map["stop_name"], header_map["stop_lat"], header_map["stop_lon"]});
+
+    // Go through each line and create a stop, adding only relevant fields
     uint32_t lines_read = 0;
-    //check that has valid format stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string token;
+        std::vector<std::string> tokens;
 
-    //if header is valid, go through each line and create a stop.  then add that stop to our graph
+        // Split the line into tokens
+        while (std::getline(ss, token, ',')) {
+            tokens.push_back(token);
+        }
 
-    //if everything went smoothly, return
+        // Ensure the line has enough columns
+        if (tokens.size() <= max_index) {
+            continue;  // Skip invalid rows
+        }
 
-    return;
+        // Extract relevant fields
+        Stop stop;
+        stop.id = tokens[header_map["stop_id"]];
+        stop.name = tokens[header_map["stop_name"]];
+        stop.lat = std::stod(tokens[header_map["stop_lat"]]);
+        stop.lon = std::stod(tokens[header_map["stop_lon"]]);
+
+        // Add the stop to the graph
+        graph->addStop(stop);
+        lines_read++;
+    }
+
+    if (lines_read == 0) {
+        throw std::runtime_error("No stops found in stops.txt");
+    }
+
+    std::cout << "Loaded " << lines_read << " stops successfully.\n";
 }
 
 void GTFSHandler::loadGraph(const std::string& folder_path) {
@@ -57,7 +116,7 @@ void GTFSHandler::loadGraph(const std::string& folder_path) {
 
     //try to go through the files and load them
     auto newGraph = std::make_unique<TransitGraph>();
-
+    this->loadStops(folder_path, newGraph);
 
 
     //if everything went well move g into out GTFS handler

@@ -12,7 +12,7 @@ class GTFSHandler{
 
         static const bool checkValidGTFSLayout(const std::string& folderpath);
 
-        void loadStops(const std::string& folderpath, std::unique_ptr<TransitGraph> graph);
+        void loadStops(const std::string& folderpath, const std::unique_ptr<TransitGraph>& graph);
 
     public:
         GTFSHandler() : g(std::make_unique<TransitGraph>()) {}
