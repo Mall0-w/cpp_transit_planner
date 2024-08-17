@@ -7,15 +7,16 @@
 
 class GTFSHandler{
     private:
-        std::unique_ptr<TransitGraph> g;
+        std::unique_ptr<TransitGraph> g = nullptr;
         static const std::vector<std::string> requiredFiles;
 
         static const bool checkValidGTFSLayout(const std::string& folderpath);
 
         void loadStops(const std::string& folderpath, const std::unique_ptr<TransitGraph>& graph);
 
+        void loadStopTimes(const std::string& folder_path, const std::unique_ptr<TransitGraph>& graph);
+
     public:
-        GTFSHandler() : g(std::make_unique<TransitGraph>()) {}
 
         inline
         TransitGraph* getGraph(){
