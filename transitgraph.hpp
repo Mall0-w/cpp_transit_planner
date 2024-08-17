@@ -6,33 +6,33 @@
 #include <algorithm> 
 
 struct Stop {
-    int id;
+    unsigned int id;
     std::string name;
     double lat;
     double lon;
 };
 
 struct Edge {
-    int stop_id;
-    int trip_id;
+    unsigned int stop_id;
+    unsigned int trip_id;
     std::string route_id;
-    int departure_time; // in seconds since midnight
-    int arrival_time;   // in seconds since midnight
-    int travel_time;    // in seconds
+    unsigned int departure_time; // in seconds since midnight
+    unsigned int arrival_time;   // in seconds since midnight
+    unsigned int travel_time;    // in seconds
 };
 
 class TransitGraph {
 private:
-    std::unordered_map<std::string, int> stop_ids;
-    std::unordered_map<int, Stop> stops;
-    std::unordered_map<int, std::vector<Edge>> edges;
+    std::unordered_map<std::string, unsigned int> stop_ids;
+    std::unordered_map<unsigned int, Stop> stops;
+    std::unordered_map<unsigned int, std::vector<Edge>> edges;
 
     // Define your algorithms as private member functions
-    int dijkstra(int from, int to, int startTime);
-    int aStar(int from, int to, int startTime);
+    std::vector<Edge> dijkstra(unsigned int from, unsigned int to, unsigned int startTime);
+    std::vector<Edge> aStar(unsigned int from, int to, unsigned int startTime);
 
     inline
-    bool stopExists(int id) const {
+    bool stopExists(unsigned int id) const {
         return stops.find(id) != stops.end();
     }
 
@@ -42,7 +42,7 @@ private:
     }
 
     inline 
-    void validatePoints(int from, int to){
+    void validatePoints(unsigned int from, unsigned int to){
         if(!stopExists(from) || !stopExists(to)){
             throw std::runtime_error("One or both stops do not exist.");
         }
@@ -64,30 +64,40 @@ public:
     }
 
     inline
-    void addEdge(const int from_stop_id, const Edge& edge) {
+    const Stop& getStop(unsigned int id){
+        return stops[id];
+    }
+
+    inline 
+    const Stop& getStop(std::string name){
+        return getStop(stop_ids[name]);
+    }
+
+    inline
+    void addEdge(const unsigned int from_stop_id, const Edge& edge) {
         edges[from_stop_id].push_back(edge);
     }
 
     // Overloaded methods to find paths with or without custom algorithm
     inline
-    int findPath(const int from, const int to, int startTime, int (TransitGraph::*algorithm)(int, int, int)){
+    std::vector<Edge> findPath(const int unsigned from, const unsigned int to, unsigned int startTime, std::vector<Edge> (TransitGraph::*algorithm)(unsigned int, unsigned int, unsigned int)){
         validatePoints(from ,to);
         return (this->*algorithm)(from, to, startTime);
     } 
 
     inline
-    int findPath(const int from, const int to, int startTime){ // Default to Dijkstra
+    std::vector<Edge> findPath(const unsigned int from, const unsigned int to, unsigned int startTime){ // Default to Dijkstra
         return findPath(from, to, startTime, &TransitGraph::dijkstra);
     } 
 
     inline
-    int findPath(const std::string& from, const std::string& to, int startTime) {
+    std::vector<Edge> findPath(const std::string& from, const std::string& to, unsigned int startTime) {
         validatePoints(from,to);
         return findPath(stop_ids[from], stop_ids[to], startTime);  // Default to Dijkstra
     }
 
     inline
-    int findPath(const std::string& from, const std::string& to, int startTime, int (TransitGraph::*algorithm)(int, int, int)) {
+    std::vector<Edge> findPath(const std::string& from, const std::string& to, unsigned int startTime, std::vector<Edge> (TransitGraph::*algorithm)(unsigned int, unsigned int, unsigned int)) {
         validatePoints(from ,to);
         return findPath(stop_ids[from], stop_ids[to], startTime, algorithm); // Custom algorithm
     }

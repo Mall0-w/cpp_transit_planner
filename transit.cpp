@@ -25,25 +25,45 @@ int main(){
     }while(g.getGraph() == nullptr);
     
 
-    int path = -1;
+    std::vector<Edge> path;
+    std::string to;
+    std::string from;
+
+    TransitGraph* graph = g.getGraph();;
     do{
-        std::cout << "Please input starting stop" << std::endl;
-        std::string to;
-        std::string from;
+
+        std::cout << "Please input starting stop (type \"exit\" to quit)" << std::endl;
         std::getline(std::cin, from);
+        if(from.compare("exit") == 0)
+            break;
         std::cout << "Please input destination stop" << std::endl;
         std::getline(std::cin, to);
         strToUpper(to);
         strToUpper(from);
 
         try{
-            path = g.getGraph()->findPath(from, to, getCurrentSecondsInDay());
+            
+            path = graph->findPath(from, to, getCurrentSecondsInDay());
+            
+            if(path.size() == 0){
+                std::cout << "No transit path exists between these two stations." << std::endl;
+                continue;
+            }
+
+            std::cout << "travel path: " << std::endl;
+            Stop current = graph->getStop(from);
+            for(const auto& point : path){
+                std::cout << "From " << current.name << " [" << secondsToTime(point.departure_time) << "]" <<
+                 " to " << graph->getStop(point.stop_id).name << " [" << secondsToTime(point.arrival_time) << "]" 
+                 << std::endl;
+                
+                current = graph->getStop(point.stop_id);
+            }
+
         }catch(const std::runtime_error& e){
             std::cerr << "Runtime error: " << e.what() << std::endl;
         }
-    }while(path == -1);
-
-    std::cout << path << std::endl;
+    }while(true);
 
     return 0;
 }
